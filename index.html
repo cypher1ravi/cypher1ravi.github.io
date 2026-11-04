@@ -3,52 +3,456 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FinTrack</title>
-<meta name="description" content="FinTrack: a private expense tracker and ledger for Android.">
+<title>FinTrack: private expense tracker and khata for Android</title>
+<meta name="description" content="Track expenses and budgets, import transactions from bank SMS, and keep a ledger of money you lend or borrow. Your data stays on your phone.">
+<meta name="theme-color" content="#0F3D2E">
+<meta property="og:title" content="FinTrack">
+<meta property="og:description" content="Expenses, budgets, bank SMS and your khata in one private Android app.">
+<meta property="og:image" content="https://cypher1ravi.github.io/img/icon.png">
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #EEF5F0; --surface: #FFFFFF; --ink: #10231A; --muted: #4F6359;
-    --rule: #E2ECE5; --brand: #0F5A3F; --on-brand: #FFFFFF;
+    /* App tokens (src/theme.ts) */
+    --paper: #EEF5F0;
+    --surface: #FFFFFF;
+    --ink: #10231A;
+    --ink-muted: #4F6359;
+    --rule: #E2ECE5;
+    --brand: #0F5A3F;
+    --forest: #0F3D2E;
+    --forest-deep: #07372F;
+    --on-forest: #FFFFFF;
+    --on-forest-muted: #B9D3C5;
+    --sun: #FFDC8B;
+    --tile-income: #E3F5EA;   --tile-income-icon: #A8E0BE;
+    --tile-expense: #FDE6E6;  --tile-expense-icon: #F7AFAF;
+    --tile-ledger: #E4EEFC;   --tile-ledger-icon: #A9C8F3;
+    --tile-sms: #EEE9FC;      --tile-sms-icon: #C8BAF2;
+    --radius-xl: 36px;
+    --radius-lg: 24px;
+    --gutter: clamp(16px, 4vw, 40px);
   }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #0B1712; --surface: #12211A; --ink: #E7F0EA; --muted: #A9BDB2; --rule: #22362C; --brand: #6EE7A0; --on-brand: #0B1712; }
-  }
+
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
   body {
-    margin: 0; min-height: 100vh; display: grid; place-items: center;
-    background: var(--bg); color: var(--ink);
-    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
   }
-  main {
-    max-width: 560px; margin: 16px; padding: 32px 24px; text-align: center;
-    background: var(--surface); border: 1px solid var(--rule); border-radius: 24px;
+  img { max-width: 100%; display: block; }
+  a { color: var(--brand); }
+  :focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 8px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- Header ---------- */
+  .site-header { padding: 20px 0; }
+  .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+  .brand img { width: 36px; height: 36px; border-radius: 10px; }
+  .brand span { font-weight: 800; font-size: 20px; letter-spacing: -0.3px; }
+  .site-nav { display: flex; gap: 24px; }
+  .site-nav a { color: var(--ink-muted); text-decoration: none; font-weight: 600; font-size: 15px; }
+  .site-nav a:hover { color: var(--ink); }
+  @media (max-width: 560px) { .site-nav { gap: 16px; } .site-nav a:nth-child(1) { display: none; } }
+
+  /* ---------- Hero: the app's passbook card ---------- */
+  .hero { padding: 8px 0 0; }
+  .passbook {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(145deg, #155849 0%, #0B4439 55%, var(--forest-deep) 100%);
+    color: var(--on-forest);
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    min-height: 600px;
+    box-shadow: 0 24px 60px -24px rgba(15, 61, 46, 0.55);
   }
-  h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.5px; }
-  .tag { color: var(--muted); margin: 0 0 20px; }
-  ul { text-align: left; display: inline-block; margin: 0 0 24px; padding-left: 22px; }
-  li { margin: 4px 0; }
-  .links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  a.button {
-    display: inline-block; padding: 10px 18px; border-radius: 14px; text-decoration: none;
-    background: var(--brand); color: var(--on-brand); font-weight: 600;
+  /* Sky glow over the whole card, sun low on the right, hills along the bottom edge */
+  .passbook::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(135deg, rgba(156, 229, 207, 0.38), rgba(18, 62, 58, 0) 60%);
   }
-  a.plain { color: var(--brand); padding: 10px 4px; }
+  .passbook .sun {
+    position: absolute; pointer-events: none;
+    right: 32%; bottom: 12%;
+    width: 220px; height: 220px; border-radius: 50%;
+    background: radial-gradient(circle, #FFDC8B 0 26%, rgba(255, 237, 177, 0.5) 27%, rgba(255, 215, 124, 0) 70%);
+  }
+  .passbook .hills {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 24%;
+    pointer-events: none;
+  }
+  @media (max-width: 860px) {
+    .passbook .hills { height: 22%; }
+    .passbook .sun { right: 8%; bottom: 14%; width: 160px; height: 160px; }
+  }
+  .hero-copy {
+    position: relative; z-index: 1;
+    padding: clamp(36px, 6vw, 72px) clamp(24px, 5vw, 64px);
+    align-self: start;
+  }
+  .hero h1 {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(40px, 6.2vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    max-width: 11ch;
+  }
+  .hero .lede {
+    margin: 22px 0 0;
+    color: var(--on-forest-muted);
+    font-size: clamp(17px, 1.6vw, 20px);
+    line-height: 1.55;
+    max-width: 34ch;
+  }
+  .hero-actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .badge-soon {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 20px;
+    border-radius: 16px;
+    background: var(--on-forest);
+    color: var(--forest);
+    font-weight: 700;
+    font-size: 16px;
+    text-decoration: none;
+  }
+  .badge-soon svg { flex: none; }
+  .hero-actions .quiet {
+    color: var(--on-forest);
+    font-weight: 600;
+    padding: 14px 8px;
+    text-underline-offset: 4px;
+  }
+
+  .hero-phone {
+    position: relative; z-index: 1;
+    align-self: end;
+    justify-self: center;
+    width: min(330px, 78%);
+    margin-top: 48px;
+    transform: translateY(14%);
+  }
+
+  @media (max-width: 860px) {
+    .passbook { grid-template-columns: 1fr; min-height: 0; }
+    .hero-copy { padding-bottom: 8px; }
+    .hero-phone { width: min(300px, 74%); margin-top: 28px; transform: translateY(10%); }
+  }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    border-radius: 40px;
+    padding: 10px;
+    background: #0D2219;
+    box-shadow: 0 30px 60px -20px rgba(7, 55, 47, 0.6), inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .phone img { border-radius: 31px; width: 100%; height: auto; background: var(--paper); }
+
+  /* ---------- Intro line under the hero ---------- */
+  .intro { padding: clamp(56px, 8vw, 96px) 0 clamp(24px, 4vw, 40px); }
+  .intro p {
+    margin: 0 auto;
+    max-width: 30ch;
+    text-align: center;
+    font-weight: 700;
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  /* ---------- Features: one band per Home tile ---------- */
+  .features { display: grid; gap: 20px; padding-bottom: clamp(56px, 8vw, 96px); }
+  .feature {
+    border-radius: var(--radius-xl);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: clamp(24px, 5vw, 64px);
+    padding: clamp(32px, 5vw, 56px) clamp(24px, 5vw, 64px) 0;
+    overflow: hidden;
+  }
+  .feature.flip .feature-copy { order: 2; }
+  .feature-copy { padding-bottom: clamp(32px, 5vw, 56px); }
+  .feature .tile-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    display: grid; place-items: center;
+    margin-bottom: 20px;
+  }
+  .feature h2 {
+    margin: 0 0 12px;
+    font-weight: 800;
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+  .feature p { margin: 0; color: var(--ink-muted); max-width: 42ch; }
+  .feature ul { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .feature li { display: flex; gap: 10px; align-items: baseline; max-width: 44ch; }
+  .feature li::before {
+    content: ""; flex: none;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor; opacity: 0.55;
+    transform: translateY(-2px);
+  }
+  .feature .shot { align-self: end; justify-self: center; width: min(300px, 100%); }
+  .feature .shot .phone { border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: 0; }
+  .feature .shot .phone img { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+
+  .feature.income  { background: var(--tile-income); }
+  .feature.income  .tile-icon { background: var(--tile-income-icon); }
+  .feature.expense { background: var(--tile-expense); }
+  .feature.expense .tile-icon { background: var(--tile-expense-icon); }
+  .feature.ledger  { background: var(--tile-ledger); }
+  .feature.ledger  .tile-icon { background: var(--tile-ledger-icon); }
+  .feature.ledger  h2 { color: #1E3A8A; }
+  .feature.sms     { background: var(--tile-sms); }
+  .feature.sms     .tile-icon { background: var(--tile-sms-icon); }
+  .feature.sms     h2 { color: #3B2A7A; }
+
+  @media (max-width: 760px) {
+    .feature { grid-template-columns: 1fr; padding-top: 32px; }
+    .feature.flip .feature-copy { order: 0; }
+    .feature-copy { padding-bottom: 0; }
+    .feature .shot { width: min(280px, 86%); }
+  }
+
+  /* ---------- Privacy ---------- */
+  .privacy {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-xl);
+    padding: clamp(32px, 5vw, 64px);
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: clamp(24px, 5vw, 64px);
+  }
+  .privacy h2 {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(30px, 3.8vw, 46px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+  .privacy .facts { display: grid; gap: 22px; margin: 0; }
+  .privacy dt { font-weight: 700; font-size: 18px; }
+  .privacy dd { margin: 4px 0 0; color: var(--ink-muted); }
+  @media (max-width: 760px) { .privacy { grid-template-columns: 1fr; } }
+
+  /* ---------- Download ---------- */
+  .download { padding: clamp(56px, 8vw, 96px) 0; text-align: center; }
+  .download img { width: 88px; height: 88px; border-radius: 24px; margin: 0 auto 24px; box-shadow: 0 12px 30px -12px rgba(15,61,46,0.45); }
+  .download h2 { margin: 0; font-weight: 800; font-size: clamp(30px, 3.8vw, 46px); letter-spacing: -0.03em; line-height: 1.1; }
+  .download p { margin: 14px auto 28px; color: var(--ink-muted); max-width: 46ch; }
+  .download .badge-soon { background: var(--forest); color: var(--on-forest); }
+
+  /* ---------- Footer ---------- */
+  .site-footer { border-top: 1px solid var(--rule); padding: 28px 0 40px; color: var(--ink-muted); font-size: 15px; }
+  .site-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; }
+  .site-footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
+  .site-footer a { color: var(--ink-muted); }
+  .site-footer a:hover { color: var(--ink); }
 </style>
 </head>
 <body>
-<main>
-  <h1>FinTrack</h1>
-  <p class="tag">Track &middot; Manage &middot; Grow</p>
-  <ul>
-    <li>Record income and expenses with budgets and charts</li>
-    <li>Import transactions from bank SMS, processed on your phone</li>
-    <li>Keep a ledger of money you lend and borrow</li>
-    <li>Your data stays on your device</li>
-  </ul>
-  <div class="links">
-    <a class="button" href="fintrack/privacy-policy.html">Privacy Policy</a>
-    <a class="plain" href="mailto:ravindrachaubey410@gmail.com">Contact</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <img src="img/icon.png" alt="" width="36" height="36">
+      <span>FinTrack</span>
+    </a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#download">Get the app</a>
+    </nav>
   </div>
+</header>
+
+<main>
+  <!-- Hero: the same forest card, sun and mountains as the app's Home screen -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="passbook">
+        <div class="sun" aria-hidden="true"></div>
+        <svg class="hills" viewBox="0 96 600 124" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="mBack" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#7EBBAD"/><stop offset="1" stop-color="#327E70"/>
+            </linearGradient>
+            <linearGradient id="mMid" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#438F7E"/><stop offset="1" stop-color="#145C50"/>
+            </linearGradient>
+            <linearGradient id="mFront" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#236C5D"/><stop offset="1" stop-color="#073C32"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 154 L58 128 L106 137 L170 108 L218 128 L272 113 L318 132 L366 111 L410 132 L468 98 L515 124 L560 113 L600 137 L600 220 L0 220 Z" fill="url(#mBack)" opacity="0.9"/>
+          <path d="M0 168 L65 143 L118 155 L176 127 L226 145 L286 123 L331 145 L378 128 L423 143 L475 112 L520 132 L560 124 L600 146 L600 220 L0 220 Z" fill="url(#mMid)"/>
+          <path d="M176 127 L226 145 L286 123 L331 145 L378 128 L423 143" fill="none" stroke="#B2E4CF" stroke-width="2" opacity="0.32" vector-effect="non-scaling-stroke"/>
+          <path d="M0 184 L62 168 L113 175 L171 151 L220 169 L280 151 L332 169 L381 151 L426 169 L472 143 L514 160 L560 151 L600 166 L600 220 L0 220 Z" fill="url(#mFront)"/>
+        </svg>
+
+        <div class="hero-copy">
+          <h1>Know where your money goes</h1>
+          <p class="lede">Expenses, budgets, bank SMS and your khata in one private app for Android. No sign-up. Your data stays on your phone.</p>
+          <div class="hero-actions">
+            <a class="badge-soon" href="#download">
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3.6 2.3c-.3.3-.4.7-.4 1.2v17c0 .5.1.9.4 1.2l9.3-9.7-9.3-9.7zm10.6 11l2.3 2.4-10.7 6.1 8.4-8.5zm0-2.6L5.8 2.2l10.7 6.1-2.3 2.4zm3.7 1.3l-2.6-1.5-2.5 2.6 2.5 2.6 2.6-1.5c.9-.5.9-1.7 0-2.2z"/></svg>
+              Coming soon on Google Play
+            </a>
+            <a class="quiet" href="fintrack/privacy-policy.html">Privacy policy</a>
+          </div>
+        </div>
+
+        <div class="hero-phone">
+          <div class="phone">
+            <img src="img/screen-home.png" width="610" height="850" alt="FinTrack Home screen showing this month's balance, money in, money out and budget, with Add Income, Add Expense, Ledger and Scan SMS shortcuts">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="intro" aria-label="About FinTrack">
+    <div class="wrap">
+      <p>The four buttons on FinTrack's Home screen are the whole idea: money in, money out, who owes whom, and what your bank already told you.</p>
+    </div>
+  </section>
+
+  <section id="features" class="wrap features" aria-label="Features">
+
+    <article class="feature income">
+      <div class="feature-copy">
+        <div class="tile-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path fill="none" stroke="#0F5A3F" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <h2>Record a transaction in seconds</h2>
+        <p>Add income or an expense with an amount, a category and a note. Your balance for the month updates straight away.</p>
+        <ul>
+          <li>Categories with icons for food, travel, bills, shopping and more</li>
+          <li>Recurring entries for rent, salary and subscriptions</li>
+          <li>Full history grouped by day, with search and filters</li>
+        </ul>
+      </div>
+      <div class="shot">
+        <div class="phone"><img src="img/screen-history.png" width="610" height="695" alt="FinTrack History screen with search, filters and transactions grouped by day" loading="lazy"></div>
+      </div>
+    </article>
+
+    <article class="feature expense flip">
+      <div class="feature-copy">
+        <div class="tile-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path fill="none" stroke="#B83A4F" stroke-width="2.2" stroke-linecap="round" d="M5 12h14"/></svg>
+        </div>
+        <h2>See what you spend, and stay on budget</h2>
+        <p>Set a monthly budget and watch it fill as you spend. The breakdown shows which categories take the most, this month or across the year.</p>
+        <ul>
+          <li>Budget progress on the Home screen</li>
+          <li>Spending by category for the month or the year</li>
+          <li>Yearly trend to compare months</li>
+        </ul>
+      </div>
+      <div class="shot">
+        <div class="phone"><img src="img/screen-breakdown.png" width="610" height="590" alt="FinTrack spending breakdown chart by category" loading="lazy"></div>
+      </div>
+    </article>
+
+    <article class="feature ledger">
+      <div class="feature-copy">
+        <div class="tile-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path fill="none" stroke="#1E3A8A" stroke-width="2" stroke-linejoin="round" d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5m0-13c2-1.5 5-2 8-1.5v13c-3-.5-6 0-8 1.5m0-13v13"/></svg>
+        </div>
+        <h2>A khata for money you lend and borrow</h2>
+        <p>Keep a page for each friend, relative or customer. FinTrack keeps the running balance, so you always know who owes you and whom you owe.</p>
+        <ul>
+          <li>Entries for money you gave and money you got</li>
+          <li>Totals for what you'll get and what you'll give</li>
+          <li>Send a payment reminder on WhatsApp in one tap</li>
+        </ul>
+      </div>
+      <div class="shot">
+        <div class="phone"><img src="img/screen-ledger.png" width="610" height="988" alt="FinTrack Ledger screen with what you'll get and what you'll give" loading="lazy"></div>
+      </div>
+    </article>
+
+    <article class="feature sms flip">
+      <div class="feature-copy">
+        <div class="tile-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path fill="none" stroke="#3B2A7A" stroke-width="2" stroke-linecap="round" d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/></svg>
+        </div>
+        <h2>Let your bank SMS do the typing</h2>
+        <p>FinTrack reads your bank and UPI messages on your phone and finds the transactions in them. Check each one and save it with a tap.</p>
+        <ul>
+          <li>Amount, date and debit or credit filled in for you</li>
+          <li>Messages you've already saved are skipped</li>
+          <li>Optional: the rest of the app works without SMS access</li>
+        </ul>
+      </div>
+      <div class="shot">
+        <div class="phone"><img src="img/screen-sms.png" width="610" height="500" alt="FinTrack SMS import screen" loading="lazy"></div>
+      </div>
+    </article>
+
+  </section>
+
+  <section id="privacy" class="wrap" aria-labelledby="privacy-title">
+    <div class="privacy">
+      <h2 id="privacy-title">Your money is nobody else's business</h2>
+      <dl class="facts">
+        <div>
+          <dt>No account, no sign-up</dt>
+          <dd>Open the app and start. There's no login and no FinTrack server holding your records.</dd>
+        </div>
+        <div>
+          <dt>Everything stays on your phone</dt>
+          <dd>Transactions, ledger contacts and SMS are processed and stored on your device and never uploaded.</dd>
+        </div>
+        <div>
+          <dt>Locked when you want it</dt>
+          <dd>Protect the app with a PIN, fingerprint or face unlock, and export a backup file whenever you like.</dd>
+        </div>
+        <div>
+          <dt>Free, with ads</dt>
+          <dd>FinTrack shows ads from Google AdMob. Ads never see your transactions or messages. <a href="fintrack/privacy-policy.html">Read the privacy policy</a>.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="download" class="download" aria-labelledby="download-title">
+    <div class="wrap">
+      <img src="img/icon.png" alt="" width="88" height="88">
+      <h2 id="download-title">FinTrack is almost here</h2>
+      <p>We're preparing the first release for Google Play. Want to know when it's out? Email us and we'll tell you.</p>
+      <a class="badge-soon" href="mailto:ravindrachaubey410@gmail.com?subject=Tell%20me%20when%20FinTrack%20is%20out">Email me when it's out</a>
+    </div>
+  </section>
 </main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>&copy; 2026 FinTrack</span>
+    <nav aria-label="Footer">
+      <a href="fintrack/privacy-policy.html">Privacy policy</a>
+      <a href="mailto:ravindrachaubey410@gmail.com">Contact</a>
+    </nav>
+  </div>
+</footer>
+
 </body>
 </html>
